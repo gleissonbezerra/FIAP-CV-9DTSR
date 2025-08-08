@@ -45,7 +45,32 @@ while True:
     if not ret:
         break
 
-    ## --- COMPLETE AQUI --- ##
+    h, w = frame.shape[:2]
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = face_mesh.process(rgb)
+
+    if results.multi_face_landmarks:
+        for face_landmarks in results.multi_face_landmarks:
+
+            ear_left = eye_aspect_ratio(face_landmarks.landmark, LEFT_EYE)
+            ear_right = eye_aspect_ratio(face_landmarks.landmark, RIGHT_EYE)
+
+            ear_avg = (ear_left + ear_right) / 2.0
+            delta = fabs(ear_avg - previous_ear_avg)
+            previous_ear_avg = ear_avg
+
+            print(f"EAR Avg: {ear_avg:.4f}, Delta: {delta:.5f}")
+
+            if delta > DELTA_THRESHOLD:
+                blink_counter += 1
+            else:
+                if blink_counter >= CONSEC_FRAMES:
+                    blink_total += 1
+                    print("Piscada detectada!")
+                blink_counter = 0
+
+            cv2.putText(frame, f"Piscadas: {blink_total}", (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
 
     cv2.imshow("Prova de Vida Ativa", frame)
     if cv2.waitKey(1) & 0xFF == 27:  # ESC
